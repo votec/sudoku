@@ -1,0 +1,69 @@
+8
+
+dir
+319
+svn://sunsvr01.isp.uni-luebeck.de/swproj07/doc
+svn://sunsvr01.isp.uni-luebeck.de/swproj07
+
+
+
+2007-12-04T23:54:21.418007Z
+81
+guest26
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+983d3d66-6764-11dc-8858-a3a325a46a52
+
+Sequenzdiagramme
+dir
+
+Klassendiagramm.jpg
+file
+
+
+
+
+2008-01-14T16:48:10.906250Z
+1fbe5830075ce43bd0b7a36200ba4cb8
+2007-11-20T21:42:20.833032Z
+32
+guest26
+has-props
+
+GUI-Prototyp
+dir
+
+Zustandsdiagramme
+dir
+
+Anwendungsfälle
+dir
+
+Entwurf - Inhalt & Deckblatt.pdf
+file
+
+
+
+
+2008-01-14T16:48:10.921875Z
+55731d5fcf4d022c9fba7f84241d9330
+2007-12-04T23:54:21.418007Z
+81
+guest26
+has-props
+
+Gantt Diagramme
+dir
+

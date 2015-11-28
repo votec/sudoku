@@ -1,0 +1,837 @@
+package grafik;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.border.Border;
+
+import client.IClient;
+
+/**
+ * Die Klasse Sudokufeld repraesentiert ein einzelnes Feld im Spielfeld in der
+ * grafischen Anzeige.
+ * 
+ * @author Thomas Fraenkler
+ * 
+ */
+public class Sudokufeld extends JPanel {
+
+	/** serial Version UID */
+	private static final long serialVersionUID = 6266741597122368537L;
+	/** */
+	JMenuItem menuItem;
+	/** */
+	JPopupMenu popup;
+	/** */
+	private Border border;
+	/** */
+	private Component eventbutton;
+	/** */
+	private SpielfeldGrafik grafik;
+	/** */
+	private GridLayout layout = new GridLayout();
+	/** */
+	private SudokufeldListener listeners;
+	/** */
+	private int number;
+	/** */
+	private int numbits = 0;
+
+	/**
+	 * Erzeugt ein Feld ohne Inhalt.
+	 * 
+	 * @param gr
+	 *            ein Spielfeldgrafikobjekt
+	 */
+	public Sudokufeld(SpielfeldGrafik gr) {
+		grafik = gr;
+		setLayout(layout);
+		setEmptyView();
+	}
+
+	/**
+	 * Erzeugt ein Feld mit einer gegebenen Zahl als Inhalt.
+	 * 
+	 * @param gr
+	 *            die Grafikanzeige des Clients
+	 * @param num
+	 *            der Inhalt des Feldes
+	 * @param client
+	 *            der Client
+	 * @param num2
+	 *            gesetztes Feld
+	 */
+	public Sudokufeld(SpielfeldGrafik gr, int num, final IClient client,
+			int num2) {
+		popup = new JPopupMenu();
+		menuItem = new JMenuItem("Feldloesung");
+		menuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				grafik.erhoeheLoesungshilfe();
+				grafik.gibFeldloesung(eventbutton);
+			}
+		});
+		popup.add(menuItem);
+		menuItem = new JMenuItem("Feld pruefen");
+		menuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				grafik.erhoeheKonflikthilfe();
+				grafik.vergleichen(eventbutton);
+			}
+		});
+		popup.add(menuItem);
+		menuItem = new JMenuItem("Feldmoeglichkeiten");
+		menuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				grafik.erhoeheMoeglichkeithilfe();
+				grafik.gibFeldMoeglichkeiten(eventbutton);
+			}
+		});
+		popup.add(menuItem);
+		number = num;
+		this.grafik = gr;
+		setLayout(layout);
+
+		if (num > 0) {
+			setStartView();
+		} else if (num2 > 0) {
+			setNumberView(num2);
+		} else {
+			setEmptyView();
+		}
+	}
+
+	/**
+	 * Gibt den zum Feld zugehoerigen Button zurueck.
+	 * 
+	 * @return eventbutton der zugehoerigen Button
+	 */
+	public Component gibEventButton() {
+		return eventbutton;
+	}
+
+	/**
+	 * Zeigt ein leeres Feld auf dem Button an.
+	 */
+	public void setEmptyView() {
+		border = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.black);
+		layout.setRows(1);
+		layout.setColumns(1);
+		this.removeAll();
+		JButton button = new JButton();
+		button.setText("");
+		button.setFont(new Font("Courier", Font.BOLD, 25));
+		button.setBorder(border);
+		button.setBackground(Color.white);
+		button.setForeground(Color.BLUE);
+		button.setFocusPainted(true);
+		button.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+					maybeShowPopup(e);
+				}
+			}
+		});
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				number = 0;
+
+				setGridView();
+			}
+		});
+		button.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent arg0) {
+				if (arg0.getButton() == MouseEvent.BUTTON3) {
+					maybeShowPopup(arg0);
+				}
+			}
+		});
+		button.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					number = 0;
+					setGridView();
+				}
+				if (e.getKeyCode() == KeyEvent.VK_TAB) {
+					System.out.println("tab");
+				}
+				if (e.getKeyCode() == KeyEvent.VK_DOWN
+						|| e.getKeyCode() == KeyEvent.VK_UP
+						|| e.getKeyCode() == KeyEvent.VK_RIGHT
+						|| e.getKeyCode() == KeyEvent.VK_LEFT) {
+					listeners.onKeyEvent(e);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_1) {
+					listeners.fieldSet(1);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_2) {
+					listeners.fieldSet(2);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_3) {
+					listeners.fieldSet(3);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_4) {
+					listeners.fieldSet(4);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_5) {
+					listeners.fieldSet(5);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_6) {
+					listeners.fieldSet(6);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_7 && grafik.gibGroesse() > 6) {
+					listeners.fieldSet(7);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_8 && grafik.gibGroesse() > 6) {
+					listeners.fieldSet(8);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_9 && grafik.gibGroesse() > 6) {
+					listeners.fieldSet(9);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_A && grafik.gibGroesse() > 9) {
+					listeners.fieldSet(10);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_B && grafik.gibGroesse() > 9) {
+					listeners.fieldSet(11);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_C && grafik.gibGroesse() > 9) {
+					listeners.fieldSet(12);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_D && grafik.gibGroesse() > 12) {
+					listeners.fieldSet(13);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_E && grafik.gibGroesse() > 12) {
+					listeners.fieldSet(14);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_F && grafik.gibGroesse() > 12) {
+					listeners.fieldSet(15);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_G && grafik.gibGroesse() > 12) {
+					listeners.fieldSet(16);
+				}
+			}
+		});
+		this.add(button);
+		doLayout();
+	}
+
+	/**
+	 * Zeigt ein Gridview auf dem Button an.
+	 */
+	public void setGridView() {
+		border = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.black);
+		int groesse = 0;
+
+		if (grafik.gibGroesse() == 6) {
+			layout.setRows(2);
+			layout.setColumns(3);
+			groesse = 6;
+		}
+		if (grafik.gibGroesse() == 9) {
+			layout.setRows(3);
+			layout.setColumns(3);
+			groesse = 9;
+		}
+		if (grafik.gibGroesse() == 12) {
+			layout.setRows(4);
+			layout.setColumns(3);
+			groesse = 12;
+		}
+		if (grafik.gibGroesse() == 16) {
+			layout.setRows(4);
+			layout.setColumns(4);
+			groesse = 16;
+		}
+		if (grafik.gibGroesse() == 100) {
+			layout.setRows(3);
+			layout.setColumns(3);
+			groesse = 9;
+		}
+
+		removeAll();
+		setLayout(new GridLayout());
+		JPanel buttoncontainer = new JPanel();
+		buttoncontainer.setBorder(border);
+		buttoncontainer.setLayout(layout);
+		buttoncontainer.setBackground(Color.white);
+		buttoncontainer.setOpaque(true);
+		add(buttoncontainer);
+
+		for (int i = 1; i < groesse + 1; i++) {
+			final JButton button = new JButton();
+			button.setBackground(Color.WHITE);
+			button.setOpaque(false);
+			// button.setPreferredSize(new Dimension(25, 25));
+			button.setFont(new Font("Courier", Font.BOLD, 11));
+			button.setBorder(BorderFactory.createEmptyBorder());
+			button.setFocusable(true);
+			button.setFocusPainted(true);
+			button.setFocusTraversalKeysEnabled(true);
+			// button.setLayout(layout);
+
+			if ((numbits & (1 << i)) == 0)
+				button.setText("" + (i));
+			else {
+
+				button.setForeground(Color.LIGHT_GRAY);
+				button.setText("" + (i));
+			}
+
+			final int num = i;
+			button.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					// setNumberView(num);
+					listeners.fieldSet(num);
+				}
+			});
+			button.addMouseListener(new MouseAdapter() {
+				public void mouseClicked(MouseEvent arg0) {
+					if (arg0.getButton() == MouseEvent.BUTTON3) {
+						int bit = 1 << num;
+
+						if ((numbits & bit) != 0) {
+							numbits &= ~bit;
+						} else {
+							numbits |= 1 << num;
+						}
+
+						setGridView();
+					}
+				}
+			});
+			button.addKeyListener(new KeyAdapter() {
+				public void keyPressed(KeyEvent e) {
+					if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						// setNumberView(num);
+						listeners.fieldSet(num);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+						int bit = 1 << num;
+
+						if ((numbits & bit) != 0) {
+							numbits &= ~bit;
+						} else {
+							numbits |= 1 << num;
+						}
+
+						setGridView();
+					}
+					if (e.getKeyCode() == KeyEvent.VK_DOWN
+							|| e.getKeyCode() == KeyEvent.VK_UP
+							|| e.getKeyCode() == KeyEvent.VK_RIGHT
+							|| e.getKeyCode() == KeyEvent.VK_LEFT) {
+						listeners.onKeyEvent(e);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_1) {
+						listeners.fieldSet(1);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_2) {
+						listeners.fieldSet(2);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_3) {
+						listeners.fieldSet(3);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_4) {
+						listeners.fieldSet(4);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_5) {
+						listeners.fieldSet(5);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_6) {
+						listeners.fieldSet(6);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_7
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(7);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_8
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(8);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_9
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(9);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_A
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(10);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_B
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(11);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_C
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(12);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_D
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(13);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_E
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(14);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_F
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(15);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_G
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(16);
+					}
+				}
+			});
+			buttoncontainer.add(button);
+		}
+		doLayout();
+		setFocus();
+	}
+
+	/**
+	 * Zeigt ein Gridview aus einer Liste von Zahlen an.
+	 * 
+	 * @param zahlen
+	 *            die Liste mit den Zahlen
+	 */
+	public void setGridView2(final List<Integer> zahlen) {
+		int groesse = 0;
+
+		if (grafik.gibGroesse() == 6) {
+			layout.setRows(2);
+			layout.setColumns(3);
+			groesse = 6;
+		}
+		if (grafik.gibGroesse() == 9) {
+			layout.setRows(3);
+			layout.setColumns(3);
+			groesse = 9;
+		}
+		if (grafik.gibGroesse() == 12) {
+			layout.setRows(4);
+			layout.setColumns(3);
+			groesse = 12;
+		}
+		if (grafik.gibGroesse() == 16) {
+			layout.setRows(4);
+			layout.setColumns(4);
+			groesse = 16;
+		}
+		if (grafik.gibGroesse() == 100) {
+			layout.setRows(3);
+			layout.setColumns(3);
+			groesse = 9;
+		}
+
+		removeAll();
+		setLayout(new GridLayout());
+		JPanel buttoncontainer = new JPanel();
+		border = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.black);
+		buttoncontainer.setBorder(border);
+		buttoncontainer.setLayout(layout);
+		buttoncontainer.setBackground(Color.white);
+		buttoncontainer.setOpaque(true);
+		add(buttoncontainer);
+
+		for (int i = 1; i < groesse + 1; i++) {
+			final JButton button = new JButton();
+			button.setBackground(Color.WHITE);
+			button.setOpaque(false);
+			button.setForeground(Color.LIGHT_GRAY);
+			button.setText("" + i);
+			// button.setPreferredSize(new Dimension(25, 25));
+			button.setFont(new Font("Courier", Font.BOLD, 11));
+			button.setBorder(BorderFactory.createEmptyBorder());
+			button.setFocusable(true);
+			button.setFocusPainted(true);
+			button.setFocusTraversalKeysEnabled(true);
+			for (int j = 0; j < zahlen.size(); j++) {
+				if (zahlen.get(j) == i) {
+					button.setForeground(Color.black);
+					button.setText("" + i);
+
+				}
+			}
+
+			button.setName("" + i);
+
+			final int num = i;
+			button.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					// setNumberView(num);
+					listeners.fieldSet(num);
+				}
+			});
+			button.addMouseListener(new MouseAdapter() {
+				public void mouseClicked(MouseEvent arg0) {
+					if (arg0.getButton() == MouseEvent.BUTTON3) {
+						eventbutton = arg0.getComponent();
+						boolean remove = false;
+
+						for (Integer j = 1; j < grafik.gibGroesse() + 1; j++) {
+							if (eventbutton.getName().equals(j.toString())) {
+								for (Integer i = 0; i < zahlen.size(); i++) {
+
+									if (eventbutton.getName().equals(
+											zahlen.get(i).toString())) {
+
+										zahlen.remove(i.intValue());
+										remove = true;
+									}
+								}
+								if (!remove) {
+									int t = Integer.parseInt(eventbutton
+											.getName());
+
+									zahlen.add(t);
+								}
+							}
+						}
+
+						if (zahlen.size() == 0)
+							setEmptyView();
+						else
+							setGridView2(zahlen);
+					}
+				}
+			});
+			button.addKeyListener(new KeyAdapter() {
+				public void keyPressed(KeyEvent e) {
+					if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						// setNumberView(num);
+						listeners.fieldSet(num);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+						eventbutton = e.getComponent();
+						boolean remove = false;
+
+						for (Integer j = 1; j < grafik.gibGroesse() + 1; j++) {
+							if (eventbutton.getName().equals(j.toString())) {
+								for (Integer i = 0; i < zahlen.size(); i++) {
+
+									if (eventbutton.getName().equals(
+											zahlen.get(i).toString())) {
+
+										zahlen.remove(i.intValue());
+										remove = true;
+									}
+								}
+								if (!remove) {
+									int t = Integer.parseInt(eventbutton
+											.getName());
+
+									zahlen.add(t);
+								}
+							}
+
+						}
+
+						if (zahlen.size() == 0)
+							setEmptyView();
+						else
+							setGridView2(zahlen);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_DOWN
+							|| e.getKeyCode() == KeyEvent.VK_UP
+							|| e.getKeyCode() == KeyEvent.VK_RIGHT
+							|| e.getKeyCode() == KeyEvent.VK_LEFT) {
+						listeners.onKeyEvent(e);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_1) {
+						listeners.fieldSet(1);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_2) {
+						listeners.fieldSet(2);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_3) {
+						listeners.fieldSet(3);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_4) {
+						listeners.fieldSet(4);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_5) {
+						listeners.fieldSet(5);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_6) {
+						listeners.fieldSet(6);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_7
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(7);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_8
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(8);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_9
+							&& grafik.gibGroesse() > 6) {
+						listeners.fieldSet(9);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_A
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(10);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_B
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(11);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_C
+							&& grafik.gibGroesse() > 9) {
+						listeners.fieldSet(12);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_D
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(13);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_E
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(14);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_F
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(15);
+					}
+					if (e.getKeyCode() == KeyEvent.VK_G
+							&& grafik.gibGroesse() > 12) {
+						listeners.fieldSet(16);
+					}
+				}
+			});
+			buttoncontainer.add(button);
+		}
+		doLayout();
+		setFocus();
+	}
+
+	/**
+	 * Zeigt eine Ziffer auf dem Button an.
+	 * 
+	 * @param num
+	 *            die anzuzeigende Ziffer
+	 */
+	public void setNumberView(int num) {
+		border = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.black);
+		layout.setRows(1);
+		layout.setColumns(1);
+		removeAll();
+		JButton button = new JButton();
+		button.setText("" + num);
+		number = num;
+		button.setFont(new Font("Courier", Font.BOLD, 18));
+		button.setBorder(border);
+		button.setBackground(Color.white);
+		button.setForeground(Color.BLUE);
+		button.setFocusPainted(true);
+		button.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+					maybeShowPopup(e);
+				}
+			}
+		});
+
+		button.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent arg0) {
+				if (arg0.getButton() == MouseEvent.BUTTON3) {
+					maybeShowPopup(arg0);
+				}
+			}
+		});
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				number = 0;
+				// setGridView();
+				listeners.fielddelete();
+			}
+		});
+		button.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					number = 0;
+					listeners.fielddelete();
+				}
+				if (e.getKeyCode() == KeyEvent.VK_TAB) {
+					System.out.println("tab");
+				}
+				if (e.getKeyCode() == KeyEvent.VK_DOWN
+						|| e.getKeyCode() == KeyEvent.VK_UP
+						|| e.getKeyCode() == KeyEvent.VK_RIGHT
+						|| e.getKeyCode() == KeyEvent.VK_LEFT) {
+					listeners.onKeyEvent(e);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_1) {
+					listeners.fielddelete();
+					listeners.fieldSet(1);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_2) {
+					listeners.fielddelete();
+					listeners.fieldSet(2);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_3) {
+					listeners.fielddelete();
+					listeners.fieldSet(3);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_4) {
+					listeners.fielddelete();
+					listeners.fieldSet(4);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_5) {
+					listeners.fielddelete();
+					listeners.fieldSet(5);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_6) {
+					listeners.fielddelete();
+					listeners.fieldSet(6);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_7 && grafik.gibGroesse() > 6) {
+					listeners.fieldSet(7);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_8 && grafik.gibGroesse() > 6) {
+					listeners.fielddelete();
+					listeners.fieldSet(8);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_9 && grafik.gibGroesse() > 6) {
+					listeners.fielddelete();
+					listeners.fieldSet(9);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_A && grafik.gibGroesse() > 9) {
+					listeners.fielddelete();
+					listeners.fieldSet(10);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_B && grafik.gibGroesse() > 9) {
+					listeners.fielddelete();
+					listeners.fieldSet(11);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_C && grafik.gibGroesse() > 9) {
+					listeners.fielddelete();
+					listeners.fieldSet(12);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_D && grafik.gibGroesse() > 12) {
+					listeners.fielddelete();
+					listeners.fieldSet(13);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_E && grafik.gibGroesse() > 12) {
+					listeners.fielddelete();
+					listeners.fieldSet(14);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_F && grafik.gibGroesse() > 12) {
+					listeners.fielddelete();
+					listeners.fieldSet(15);
+				}
+				if (e.getKeyCode() == KeyEvent.VK_G && grafik.gibGroesse() > 12) {
+					listeners.fielddelete();
+					listeners.fieldSet(16);
+				}
+			}
+		});
+		this.add(button);
+		doLayout();
+		setFocus();
+	}
+
+	/**
+	 * Speichert den Listener in der Variable listeners.
+	 * 
+	 * @param l
+	 *            der zugehoerige Listener
+	 */
+	protected void addSudokufeldListener(SudokufeldListener l) {
+		listeners = l;
+	}
+
+	/**
+	 * Gibt den Inhalt des Feldes zurueck.
+	 * 
+	 * @return number der Inhalt des Feldes
+	 */
+	protected int getNumber() {
+		return number;
+	}
+
+	/**
+	 * Setzt den Focus auf das Feld.
+	 */
+	protected void setFocus() {
+		transferFocus();
+	}
+
+	/**
+	 * Zeigt ein Popupmenue mit den Optionen "Feldloesung", "Spielfeld pruefen"
+	 * und "Moeglichkeiten anzeigen".
+	 * 
+	 * @param e das MouseEvent
+	 */
+	private void maybeShowPopup(KeyEvent e) {
+		if (!grafik.gibMehrspieler()) {
+			popup.show(e.getComponent(), 0, 0);
+		}
+	}
+
+	/**
+	 * Zeigt ein Popupmenue mit den Optionen "Feldloesung", "Spielfeld pruefen"
+	 * und "Moeglichkeiten anzeigen".
+	 * 
+	 * @param e das MouseEvent
+	 */
+	private void maybeShowPopup(MouseEvent e) {
+		if (!grafik.gibMehrspieler()) {
+			eventbutton = e.getComponent();
+			popup.show(e.getComponent(), e.getX(), e.getY());
+		}
+	}
+
+	/**
+	 * Zeigt die Startfelder auf dem Button an.
+	 */
+	private void setStartView() {
+		border = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.black);
+		layout.setRows(1);
+		layout.setColumns(1);
+		this.removeAll();
+		JButton button = new JButton();
+		button.setText("" + number);
+		button.setFont(new Font("Courier", Font.BOLD, 20));
+		button.setBorder(border);
+		button.setBackground(Color.white);
+		button.setForeground(Color.red);
+		button.setFocusPainted(true);
+		/*
+		 * button.addActionListener(new ActionListener() {
+		 * 
+		 * public void actionPerformed(ActionEvent arg0) { number = 0;
+		 * 
+		 * setGridView(); } });
+		 */
+		button.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				/*
+				 * if (e.getKeyCode() == KeyEvent.VK_ENTER) { number = 0;
+				 * setGridView(); }
+				 */
+				if (e.getKeyCode() == KeyEvent.VK_DOWN
+						|| e.getKeyCode() == KeyEvent.VK_UP
+						|| e.getKeyCode() == KeyEvent.VK_RIGHT
+						|| e.getKeyCode() == KeyEvent.VK_LEFT) {
+					listeners.onKeyEvent(e);
+				}
+			}
+		});
+		this.add(button);
+		doLayout();
+	}
+
+}
